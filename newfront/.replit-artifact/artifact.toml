@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Hospital AI Command Center"
+description = "A bilingual hospital operations command center for monitoring ER and ICU state, forecasts, risks, coordination, and what-if scenarios."
+version = "1.0.0"
+id = "artifacts/hospital-command-center"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26176
+
+[services.development]
+run = "npm run dev"
+
+[services.production]
+build = [ "npm", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/hospital-command-center/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26176"
+BASE_PATH = "/"
