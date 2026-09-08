@@ -9,11 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Minus,
-} from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import {
   departments,
   insights,
@@ -139,6 +135,13 @@ export function ForecastChart({
           />
           <XAxis
             dataKey="timestamp"
+            tickFormatter={(value) =>
+              new Date(value).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })
+            }
             tick={{ fill: "#879592", fontSize: 10 }}
             axisLine={false}
             tickLine={false}
