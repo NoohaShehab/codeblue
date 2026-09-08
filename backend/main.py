@@ -1,11 +1,28 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from api.departments import router as departments_router
+from api.beds import router as beds_router
+from api.visits import router as visits_router
+from api.telemetry import router as telemetry_router
+from api.events import router as events_router
+
+app = FastAPI(title="Hospital Digital Twin API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(departments_router)
+app.include_router(beds_router)
+app.include_router(visits_router)
+app.include_router(telemetry_router)
+app.include_router(events_router)
 
 @app.get("/")
-def read_root():
-    return {"message": "Hospital Digital Twin API is running"}
-
-@app.get("/departments")
-def get_departments():
-    return [{"name": "ER", "beds_total": 10}, {"name": "ICU", "beds_total": 6}]
+def root():
+    return {"message": "Hospital Digital Twin API is active. Navigate to /docs for interactive Swagger UI."}
