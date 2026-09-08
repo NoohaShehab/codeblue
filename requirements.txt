@@ -3,3 +3,4 @@ numpy
 fastapi
 uvicorn
 sqlalchemy
+prophet
