@@ -21,6 +21,7 @@ import {
   type ForecastPoint,
 } from "@/lib/ops-data";
 import { T, useI18n } from "@/lib/i18n";
+import type { SimulationResponse } from "@/api/ai";
 import { StatusPill } from "@/components/command-shell";
 
 export const card =
@@ -566,35 +567,38 @@ export function SimSlider({
 export function SimulationOutcome({
   result,
 }: {
-  result: ReturnType<typeof import("@/lib/ops-data").runSimulation>;
+  result: SimulationResponse;
 }) {
   const { t } = useI18n();
-  const urgent = result.erPressure > 85 || result.icuOccupancy > 95;
+  const erPressure = result.scenario_metrics.er_pressure;
+  const icuOccupancy = result.scenario_metrics.icu_occupancy_percent;
+  const availableBeds = result.scenario_metrics.available_beds;
+  const urgent = erPressure > 85 || icuOccupancy > 95;
   return (
     <div className="animate-rise">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Outcome
           label="simulation.erPressure"
-          value={`${result.erPressure}`}
+          value={`${erPressure}`}
           unit="/ 100"
-          tone={result.erPressure > 85 ? "bad" : "ok"}
+          tone={erPressure > 85 ? "bad" : "ok"}
         />
         <Outcome
           label="simulation.icuOccupancy"
-          value={`${result.icuOccupancy}%`}
-          tone={result.icuOccupancy > 95 ? "bad" : "warn"}
+          value={`${icuOccupancy}%`}
+          tone={icuOccupancy > 95 ? "bad" : "warn"}
         />
         <Outcome
           label="simulation.availableBeds"
-          value={`${result.availableBeds}`}
+          value={`${availableBeds}`}
           unit="common.beds"
-          tone={result.availableBeds < 40 ? "warn" : "ok"}
+          tone={availableBeds < 40 ? "warn" : "ok"}
         />
         <Outcome
           label="simulation.waitTime"
-          value={`${result.waitTimeDelta > 0 ? "+" : ""}${result.waitTimeDelta}`}
+          value={`${result.changes.wait_time_index > 0 ? "+" : ""}${result.changes.wait_time_index}`}
           unit="common.patients"
-          tone={result.waitTimeDelta > 15 ? "bad" : "ok"}
+          tone={result.changes.wait_time_index > 15 ? "bad" : "ok"}
         />
       </div>
       <div
@@ -604,13 +608,7 @@ export function SimulationOutcome({
           <div className="h-4 w-4" /> <T id="simulation.suggestedPosture" />
         </div>
         <p className="mt-3 text-base font-bold leading-relaxed text-[#355458]">
-          <T
-            id={
-              urgent
-                ? "simulation.recommendEscalate"
-                : "simulation.recommendProceed"
-            }
-          />
+          {result.answer ?? result.disclaimer}
         </p>
       </div>
       <div className="mt-6">
@@ -620,18 +618,21 @@ export function SimulationOutcome({
         <div className="space-y-2 text-xs text-[#667876]">
           <Delta
             label="simulation.erPressure"
-            value={`+${result.erPressure - 74} ${t("simulation.points")}`}
+            value={`${result.changes.er_pressure > 0 ? "+" : ""}${result.changes.er_pressure} ${t("simulation.points")}`}
           />
           <Delta
             label="simulation.icuOccupancy"
-            value={`+${(result.icuOccupancy - 92.4).toFixed(1)} ${t("simulation.points")}`}
+            value={`${result.changes.icu_occupancy_percent > 0 ? "+" : ""}${result.changes.icu_occupancy_percent} ${t("simulation.points")}`}
           />
           <Delta
             label="simulation.hospitalBeds"
-            value={`${result.availableBeds - 47} ${t("common.beds")}`}
+            value={`${result.changes.available_beds} ${t("common.beds")}`}
           />
         </div>
       </div>
+      {result.warnings.length > 0 && (
+        <p className="mt-5 text-xs text-[#a37632]">{result.warnings.join(" ")}</p>
+      )}
     </div>
   );
 }

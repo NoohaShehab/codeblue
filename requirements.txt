@@ -4,3 +4,9 @@ fastapi
 uvicorn
 sqlalchemy
 prophet
+langchain
+langchain-openai
+langgraph
+pydantic
+python-dotenv
+pytest
