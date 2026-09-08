@@ -1,0 +1,31 @@
+from ai.tools.hospital_tools import (
+    get_bed_availability,
+    get_bed_occupancy,
+    get_clinical_summary,
+    get_department_capacity,
+    get_department_status,
+    get_equipment_status,
+    get_hospital_snapshot,
+    get_patient_flow,
+    get_recent_events,
+    get_staff_status,
+    get_transfer_activity,
+    get_triage_summary,
+    get_waiting_patients,
+)
+
+__all__ = [
+    "get_bed_availability",
+    "get_bed_occupancy",
+    "get_clinical_summary",
+    "get_department_capacity",
+    "get_department_status",
+    "get_equipment_status",
+    "get_hospital_snapshot",
+    "get_patient_flow",
+    "get_recent_events",
+    "get_staff_status",
+    "get_transfer_activity",
+    "get_triage_summary",
+    "get_waiting_patients",
+]

@@ -2,6 +2,7 @@ import { type ComponentType, type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Activity, ArrowUpRight, Bell, BrainCircuit, CircleHelp, Command, LayoutDashboard, Map, Menu, Network, Settings2, ShieldCheck, Siren, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { useI18n, type Language, T } from '@/lib/i18n';
+import { askAI, type AIQueryResponse } from '@/api/ai';
 
 type Icon = ComponentType<{ className?: string }>;
 const navItems: { href: string; label: string; icon: Icon; count?: string }[] = [
@@ -21,14 +22,25 @@ export function CommandShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState(false);
+  const [answer, setAnswer] = useState<AIQueryResponse | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
   const { direction, language, setLanguage, t } = useI18n();
   const isArabic = language === 'ar';
 
-  const submitQuestion = () => {
-    if (!question.trim()) return;
-    setAnswer(true);
-    setQuestion('');
+  const submitQuestion = async () => {
+    const query = question.trim();
+    if (!query || asking) return;
+    setAsking(true);
+    setAiError(null);
+    try {
+      setAnswer(await askAI(query));
+      setQuestion('');
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : 'The AI service is unavailable.');
+    } finally {
+      setAsking(false);
+    }
   };
 
   return (
@@ -72,8 +84,8 @@ export function CommandShell({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-8">{children}</div>
       </main>
       <div className={`fixed bottom-4 z-30 md:bottom-6 ${isArabic ? 'left-4 md:left-7' : 'right-4 md:right-7'}`}>
-        {answer && <div className="mb-2 w-[300px] rounded-xl border border-[#cfe1dc] bg-[#fbfaf7] p-4 text-xs leading-relaxed text-[#496367] shadow-xl"><div className="mb-2 flex items-center gap-2 font-bold text-[#285a58]"><Sparkles className="h-4 w-4" /> {t('header.answerTitle')}</div>{t('header.answer')}<button className="mt-3 block text-[11px] font-semibold text-[#1c8580]" onClick={() => setAnswer(false)} data-testid="button-dismiss-answer">{t('header.dismiss')}</button></div>}
-        <div className="flex items-center rounded-xl border border-[#c7dad6] bg-[#fbfaf7] p-1.5 shadow-lg"><CircleHelp className="mx-2 h-4 w-4 text-[#57918d]" /><input value={question} onChange={(e) => setQuestion(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submitQuestion()} placeholder={t('header.askPlaceholder')} className="w-[190px] bg-transparent px-1 py-2 text-xs outline-none placeholder:text-[#91a2a1] md:w-[235px]" data-testid="input-operational-question" /><button onClick={submitQuestion} className="rounded-lg bg-[#1e7775] px-3 py-2 text-xs font-bold text-white hover:bg-[#145f5f]" data-testid="button-ask-question">{t('header.ask')}</button></div>
+        {(answer || aiError) && <div className="mb-2 w-[300px] rounded-xl border border-[#cfe1dc] bg-[#fbfaf7] p-4 text-xs leading-relaxed text-[#496367] shadow-xl"><div className="mb-2 flex items-center gap-2 font-bold text-[#285a58]"><Sparkles className="h-4 w-4" /> {answer?.agent ?? t('header.answerTitle')}</div>{aiError ?? answer?.answer}<button className="mt-3 block text-[11px] font-semibold text-[#1c8580]" onClick={() => { setAnswer(null); setAiError(null); }} data-testid="button-dismiss-answer">{t('header.dismiss')}</button></div>}
+        <div className="flex items-center rounded-xl border border-[#c7dad6] bg-[#fbfaf7] p-1.5 shadow-lg"><CircleHelp className="mx-2 h-4 w-4 text-[#57918d]" /><input value={question} onChange={(e) => setQuestion(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submitQuestion()} placeholder={t('header.askPlaceholder')} className="w-[190px] bg-transparent px-1 py-2 text-xs outline-none placeholder:text-[#91a2a1] md:w-[235px]" data-testid="input-operational-question" /><button onClick={submitQuestion} disabled={asking} className="rounded-lg bg-[#1e7775] px-3 py-2 text-xs font-bold text-white hover:bg-[#145f5f] disabled:cursor-wait disabled:opacity-70" data-testid="button-ask-question">{asking ? '...' : t('header.ask')}</button></div>
       </div>
     </div>
   );

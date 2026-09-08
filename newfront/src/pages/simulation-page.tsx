@@ -3,9 +3,9 @@ import { Layers3, Play, RefreshCw } from "lucide-react";
 import { T, useI18n } from "@/lib/i18n";
 import {
   defaultScenario,
-  runSimulation,
   type SimulationScenario,
 } from "@/lib/ops-data";
+import { simulateAI, type SimulationResponse } from "@/api/ai";
 import {
   PageHeader,
   SectionTitle,
@@ -19,18 +19,30 @@ import {
 
 export function Simulation() {
   const [scenario, setScenario] = useState<SimulationScenario>(defaultScenario);
-  const [result, setResult] = useState<ReturnType<typeof runSimulation> | null>(
-    null,
-  );
+  const [result, setResult] = useState<SimulationResponse | null>(null);
   const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const update = (key: keyof SimulationScenario, value: number) =>
     setScenario((s) => ({ ...s, [key]: value }));
-  const run = () => {
+  const run = async () => {
     setRunning(true);
-    window.setTimeout(() => {
-      setResult(runSimulation(scenario));
+    setError(null);
+    try {
+      setResult(await simulateAI({
+        er_arrivals_change: scenario.erArrivalDelta,
+        icu_beds_unavailable: scenario.icuBedReduction,
+        additional_icu_admissions: scenario.icuAdmissionDelta,
+        delayed_discharges: scenario.delayedDischarges,
+      }));
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "The simulation service is unavailable.",
+      );
+    } finally {
       setRunning(false);
-    }, 550);
+    }
   };
   return (
     <div className="animate-rise">
@@ -43,6 +55,7 @@ export function Simulation() {
             onClick={() => {
               setScenario(defaultScenario);
               setResult(null);
+              setError(null);
             }}
             className="flex items-center gap-2 rounded-lg border border-[#d6e1db] bg-[#fbfaf7] px-3 py-2 text-xs text-[#637977] hover:bg-[#eef2ed]"
             data-testid="button-reset-simulation"
@@ -112,6 +125,7 @@ export function Simulation() {
               </>
             )}
           </button>
+          {error && <p className="mt-3 text-xs text-[#b85d49]">{error}</p>}
         </div>
         <div className={`${card} min-h-[430px] p-5`}>
           <SectionTitle
