@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/beds", tags=["Beds & Assignments"])
 class BedOut(BaseModel):
     bed_id: int
     department_id: int
-    room_number: str
+    bed_number: str
     bed_type: str
     status: str
     class Config:

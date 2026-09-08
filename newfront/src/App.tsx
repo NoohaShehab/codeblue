@@ -5,7 +5,13 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { CommandShell } from '@/components/command-shell';
-import { Coordination, Dashboard, DigitalTwin, ER, Forecasting, ICU, Insights, Simulation } from '@/pages/command-pages';
+import { Coordination } from '@/pages/coordination-page';
+import { Dashboard } from '@/pages/dashboard-page';
+import { DigitalTwin } from '@/pages/digital-twin-page';
+import { ER, ICU } from '@/pages/detail-page';
+import { Forecasting } from '@/pages/forecasting-page';
+import { Insights } from '@/pages/insights-page';
+import { Simulation } from '@/pages/simulation-page';
 import { I18nProvider } from '@/lib/i18n';
 import {
   Route,
