@@ -4,6 +4,34 @@ export type AIQueryResponse = {
   agent: string | null;
   answer: string | null;
   routing_decision: { route?: string; reason?: string } | null;
+  decision: RecommendationDecision | null;
+  recommendation_agent: string | null;
+  recommendation_summary: string | null;
+};
+
+export type RecommendationItem = {
+  action_id: string;
+  action: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  reason: string;
+  signals: string[];
+  expected_impact: string;
+  owner: string;
+  status: 'recommended' | 'monitor' | 'requires_approval';
+};
+
+export type RecommendationDecision = {
+  summary: string;
+  focus_areas: string[];
+  recommendations: RecommendationItem[];
+  priority: RecommendationItem['priority'];
+  department: string | null;
+  action: string;
+  reason: string;
+  signals: string[];
+  expected_impact: string;
+  owner: string;
+  status: RecommendationItem['status'];
 };
 
 export type SimulationScenario = {

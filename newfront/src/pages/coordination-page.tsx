@@ -1,23 +1,45 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   BrainCircuit,
+  Check,
   Play,
   Users,
 } from "lucide-react";
 import { T } from "@/lib/i18n";
 import { PageHeader, SectionTitle } from "@/components/command-shell";
 import { card } from "@/components/command-page-shared";
+import { askAI, type RecommendationDecision } from "@/api/ai";
 
 export function Coordination() {
   const [showReasoning, setShowReasoning] = useState(true);
-  const reasoning = ["coord.reason1", "coord.reason2", "coord.reason3"];
-  const ownerTeams = [
-    "coord.medicineCharge",
-    "coord.pharmacy",
-    "coord.caseManagement",
-    "coord.bedPlacement",
-  ];
+  const [decision, setDecision] = useState<RecommendationDecision | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const loadRecommendations = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await askAI(
+        "What should we do about the current ICU and ER pressure?",
+      );
+      setDecision(response.decision);
+      setAcknowledged(false);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "The recommendation service is unavailable.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadRecommendations();
+  }, []);
   return (
     <div className="animate-rise">
       <PageHeader
@@ -47,7 +69,7 @@ export function Coordination() {
               <T id="coord.brief" />
             </div>
             <p className="mt-4 max-w-3xl text-lg font-semibold leading-relaxed tracking-[-.02em] text-[#2b4d50]">
-              <T id="coord.situation" />
+              {loading ? "Loading current operational recommendations..." : decision?.summary ?? error}
             </p>
           </div>
           <div className="p-6">
@@ -62,17 +84,31 @@ export function Coordination() {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[#285853]">
-                    <T id="coord.flexPod" />
+                    {decision?.action ?? "No recommendation available"}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-[#5e7671]">
-                    <T id="coord.flexPodText" />
+                    {decision?.reason ?? "The recommendation service has not returned a decision yet."}
                   </p>
                   <button
-                    className="mt-4 rounded-lg bg-[#277b76] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#1e6966]"
+                    type="button"
+                    disabled={!decision || acknowledged}
+                    onClick={() => setAcknowledged(true)}
+                    className={`mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold shadow-sm transition-all ${
+                      acknowledged
+                        ? "cursor-default border border-[#9ed2c4] bg-[#e4f5ee] text-[#277b76]"
+                        : "bg-[#277b76] text-white hover:-translate-y-0.5 hover:bg-[#1e6966] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                    }`}
+                    aria-pressed={acknowledged}
                     data-testid="button-activate-flex-pod"
                   >
-                    <T id="coord.acknowledge" />{" "}
-                    <ArrowUpRight className="ms-1 inline h-3.5 w-3.5" />
+                    {acknowledged ? <Check className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
+                    {acknowledged
+                      ? decision?.status === "requires_approval"
+                        ? "Approval requested"
+                        : "Acknowledged"
+                      : decision?.status === "requires_approval"
+                        ? "Request approval"
+                        : "Acknowledge and assign owners"}
                   </button>
                 </div>
               </div>
@@ -81,17 +117,20 @@ export function Coordination() {
               <div className="mt-6">
                 <SectionTitle title="coord.why" meta="coord.whyMeta" />
                 <div className="space-y-2">
-                  {reasoning.map((r, i) => (
+                  {(decision?.recommendations ?? []).map((recommendation, i) => (
                     <div
                       className="flex items-center gap-3 rounded-lg border border-[#e2e8e2] bg-[#fafbf7] p-3 text-xs text-[#566c6c]"
-                      key={r}
+                      key={recommendation.action_id}
                     >
                       <span className="mono grid h-6 w-6 place-items-center rounded-full bg-[#e4f1ec] text-[10px] font-bold text-[#3c897d]">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <T id={r} />
+                      <span><strong>{recommendation.action}</strong> | {recommendation.expected_impact}</span>
                     </div>
                   ))}
+                  {!loading && !decision?.recommendations.length && (
+                    <p className="text-xs text-[#b85d49]">{error ?? "No recommendations returned."}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -104,35 +143,33 @@ export function Coordination() {
               meta="coord.priorityMeta"
             />
             <div className="space-y-3">
-              {["coord.priority1", "coord.priority2", "coord.priority3"].map(
-                (p, i) => (
-                  <div className="flex items-center gap-3" key={p}>
+              {(decision?.recommendations ?? []).map((recommendation, i) => (
+                  <div className="flex items-center gap-3" key={recommendation.action_id}>
                     <div className="mono text-[11px] font-bold text-[#78a19b]">
                       0{i + 1}
                     </div>
                     <div className="h-px w-4 bg-[#b3d2c9]" />
                     <div className="text-xs font-semibold text-[#486267]">
-                      <T id={p} />
+                      {recommendation.action}
                     </div>
                   </div>
-                ),
-              )}
+                ))}
             </div>
           </div>
           <div className={`${card} p-5`}>
             <SectionTitle title="coord.ownerHandoffs" meta="coord.ownerMeta" />
             <div className="space-y-2">
-              {ownerTeams.map((team, i) => (
+              {(decision?.recommendations ?? []).map((recommendation) => (
                 <div
                   className="flex items-center justify-between rounded-lg bg-[#f3f6f1] px-3 py-2.5"
-                  key={team}
+                  key={recommendation.action_id}
                 >
                   <span className="flex items-center gap-2 text-xs text-[#596e6d]">
                     <Users className="h-3.5 w-3.5 text-[#69938e]" />
-                    <T id={team} />
+                    {recommendation.owner}
                   </span>
                   <span className="mono text-[10px] text-[#8b9995]">
-                    <T id={i < 2 ? "coord.ready" : "coord.standBy"} />
+                    {recommendation.status}
                   </span>
                 </div>
               ))}

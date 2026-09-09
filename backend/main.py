@@ -10,6 +10,7 @@ from api.digital_twin import router as digital_twin_router
 from api.ai import router as ai_router
 from api.forecast import router as forecast_router
 from api.icu_forecast import router as icu_forecast_router
+from api.insights import router as insights_router
 from api.er_summary import router as er_summary_router
 
 app = FastAPI(title="Hospital Digital Twin API", version="1.0.0")
@@ -31,6 +32,7 @@ app.include_router(digital_twin_router)
 app.include_router(ai_router)
 app.include_router(forecast_router)
 app.include_router(icu_forecast_router)
+app.include_router(insights_router)
 app.include_router(er_summary_router)
 
 @app.get("/")
