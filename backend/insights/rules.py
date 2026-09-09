@@ -24,6 +24,40 @@ def _display_department(row: Dict[str, Any], department_type: str) -> str:
     return str(row.get("name") or department_type)
 
 
+def _pluralize_beds(value: Any) -> str:
+    return "bed" if value == 1 else "beds"
+
+
+def _why(
+    department: str,
+    severity: Severity,
+    occupancy: Any,
+    available: Any,
+) -> str:
+    if severity == "critical":
+        triggers = []
+        if isinstance(occupancy, (int, float)) and occupancy >= 90:
+            triggers.append(f"occupancy is {occupancy}%")
+        if isinstance(available, (int, float)) and available <= 1:
+            triggers.append(
+                f"only {available} {_pluralize_beds(available)} "
+                f"{'is' if available == 1 else 'are'} available"
+            )
+        if len(triggers) == 2:
+            return f"{department} capacity is critical because {triggers[0]} and {triggers[1]}."
+        if triggers:
+            return f"{department} capacity is critical because {triggers[0]}."
+    if severity == "watch":
+        return (
+            f"{department} capacity requires attention because occupancy is "
+            f"{occupancy}%, which is within the existing watch range."
+        )
+    return (
+        f"{department} capacity is stable because occupancy is {occupancy}% and "
+        f"{available} {_pluralize_beds(available)} are currently available."
+    )
+
+
 def build_capacity_insight(
     row: Dict[str, Any],
     department_type: str,
@@ -36,6 +70,7 @@ def build_capacity_insight(
     available = row.get("available_beds")
     occupied = row.get("occupied_beds")
     total = row.get("total_beds")
+    why = _why(department, severity, occupancy, available)
 
     evidence = [
         EvidenceItem(label="Occupancy", value=occupancy, source=source),
@@ -54,6 +89,7 @@ def build_capacity_insight(
         severity=severity,
         title=f"{department} capacity status",
         description=description,
+        why=why,
         evidence=evidence,
         source=source,
         as_of=str(as_of) if as_of is not None else None,

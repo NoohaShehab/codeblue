@@ -12,6 +12,7 @@ export type Insight = {
   severity: InsightSeverity;
   title: string;
   description: string;
+  why: string;
   evidence: InsightEvidence[];
   source: string;
   as_of: string | null;
