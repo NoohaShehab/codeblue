@@ -53,6 +53,7 @@ class RecommendationItem(BaseModel):
 
 
 class Recommendation(BaseModel):
+    action_id: str
     summary: str = Field(
         description="Short hospital-wide operational summary"
     )

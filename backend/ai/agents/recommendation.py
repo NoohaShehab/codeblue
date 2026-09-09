@@ -10,22 +10,42 @@ from ai.schemas.recommendation import Recommendation, RecommendationItem
 from ai.prompts.prompts import RECOMMENDATION_SUMMARY_PROMPT
 
 
-ACTION_LIBRARY: Dict[str, Dict[str, str]] = {
-    "coordinated_discharge_huddle": {
-        "action": "Run a coordinated discharge huddle",
-        "owner": "Medicine, Pharmacy, and Case Management",
+ACTION_LIBRARY = {
+    "increase_physician_capacity": {
+        "action": "Increase physician coverage for ER assessment",
+        "owner": "ER Operations and Medical Staffing",
     },
+    "increase_triage_capacity": {
+        "action": "Increase nurse coverage for ER triage",
+        "owner": "ER Charge Nurse and Operations",
+    },
+    "coordinate_er_assessment_flow": {
+        "action": "Coordinate ER assessment flow and reassess physician coverage",
+        "owner": "ER Operations",
+    },
+
     "reduce_er_boarding": {
         "action": "Reduce ER boarding through bed-placement escalation",
         "owner": "Bed Placement and Operations",
     },
+
+    "protect_icu_capacity": {
+        "action": "Protect ICU capacity and confirm step-down placement",
+        "owner": "ICU Charge and Bed Placement",
+    },
+
     "activate_flex_capacity": {
         "action": "Activate approved flex capacity",
         "owner": "Capacity Command Group",
     },
-    "protect_icu_capacity": {
-        "action": "Protect ICU capacity and confirm step-down placement",
-        "owner": "ICU Charge and Bed Placement",
+
+    "coordinated_discharge_huddle": {
+        "action": "Run a coordinated discharge huddle",
+        "owner": "Medicine, Pharmacy, and Case Management",
+    },
+    "monitor_operational_bottleneck": {
+        "action": "Monitor the detected bottleneck and reassess operational capacity",
+        "owner": "ER Operations",
     },
 }
 
@@ -191,6 +211,62 @@ def _choose_actions(
     return actions
 
 
+def _choose_context_actions(context: Dict[str, Any]) -> List[RecommendationItem]:
+    bottlenecks = context.get("bottlenecks") or {}
+    items = bottlenecks.get("bottlenecks") or []
+    if not items:
+        return []
+    bottleneck = items[0]
+    bottleneck_type = bottleneck.get("bottleneck_type")
+    cause_type = bottleneck.get("cause_type") or "QUEUE_ACCUMULATION"
+    evidence = bottleneck.get("cause_evidence") or []
+    signals = list(evidence)
+    metrics = context.get("metrics") or {}
+    forecast = context.get("forecast") or {}
+    if metrics.get("longest_wait_minutes") is not None:
+        signals.append(f"Longest ER wait: {metrics['longest_wait_minutes']} minutes")
+    if forecast.get("peak_arrivals") is not None:
+        signals.append(f"Forecast peak arrivals: {forecast['peak_arrivals']}")
+
+    action_by_type = {
+        "ICU_CAPACITY": "protect_icu_capacity",
+        "TRANSFER_CAPACITY": "reduce_er_boarding",
+        "DISPOSITION": "coordinated_discharge_huddle",
+        "TRIAGE_CAPACITY": "increase_triage_capacity",
+    }
+    if bottleneck_type == "PHYSICIAN_ASSESSMENT":
+        action_id = "increase_physician_capacity" if cause_type == "PHYSICIAN_CAPACITY" else "coordinate_er_assessment_flow"
+    elif bottleneck_type == "TRIAGE_CAPACITY" and cause_type != "TRIAGE_CAPACITY":
+        action_id = "monitor_operational_bottleneck"
+    else:
+        action_id = action_by_type.get(bottleneck_type)
+    if not action_id:
+        action_id = "reduce_er_boarding" if cause_type == "QUEUE_ACCUMULATION" else None
+    if not action_id or action_id not in ACTION_LIBRARY:
+        action_id = "monitor_operational_bottleneck"
+
+    priority = "critical" if bottleneck.get("severity") == "HIGH" else "high"
+    action = ACTION_LIBRARY[action_id]
+    return [RecommendationItem(
+        action_id=action_id,
+        action=action["action"],
+        priority=priority,
+        reason=(
+            f"The detected {bottleneck_type} bottleneck is supported by verified "
+            f"operational evidence and its contributing factor is {cause_type}."
+        ),
+        signals=signals,
+        expected_impact=(
+            "Reduce the affected operational queue and prevent further accumulation "
+            "under the current forecast context."
+            if action_id != "monitor_operational_bottleneck"
+            else "Maintain visibility until verified evidence supports a targeted intervention."
+        ),
+        owner=action["owner"],
+        status="requires_approval" if action_id in {"increase_physician_capacity", "activate_flex_capacity"} else "recommended",
+    )]
+
+
 def _generate_summary(
     state: HospitalState,
     actions: List[RecommendationItem],
@@ -209,6 +285,7 @@ def _generate_summary(
 
     payload = {
         "hospital_facts": snapshot,
+        "structured_recommendation_context": state.get("recommendation_context") or {},
         "allowed_actions": [
             item.model_dump()
             for item in actions
@@ -278,12 +355,15 @@ def recommendation_node(state: HospitalState) -> dict:
     ) or {}
 
     # 1. Determine allowed actions from verified data
-    actions = _choose_actions(
-    snapshot,
-    analyses,
-    simulation,
-    state.get("user_query", ""),
-)
+    structured_context = state.get("recommendation_context") or {}
+    actions = _choose_context_actions(structured_context) if structured_context else []
+    if not actions:
+        actions = _choose_actions(
+            snapshot,
+            analyses,
+            simulation,
+            state.get("user_query", ""),
+        )
 
     # 2. Generate human-readable summary
     summary = _generate_summary(
@@ -299,6 +379,9 @@ def recommendation_node(state: HospitalState) -> dict:
         if item.action_id == "protect_icu_capacity":
             focus_areas.append("ICU")
 
+        elif item.action_id in {"increase_physician_capacity", "increase_triage_capacity"}:
+            focus_areas.append("ER")
+
         elif item.action_id == "reduce_er_boarding":
             focus_areas.append("ER")
 
@@ -307,6 +390,9 @@ def recommendation_node(state: HospitalState) -> dict:
 
         elif item.action_id == "coordinated_discharge_huddle":
             focus_areas.append("Inpatient capacity")
+
+        elif item.action_id == "reduce_er_boarding":
+            focus_areas.append("ER transfer flow")
 
     focus_areas = list(dict.fromkeys(focus_areas))
 
@@ -318,25 +404,27 @@ def recommendation_node(state: HospitalState) -> dict:
         "critical",
     )
 
-    highest_priority = max(
+    actions = sorted(
         actions,
-        key=lambda item: priority_order.index(
-            item.priority
-        ),
-    ).priority
+        key=lambda item: priority_order.index(item.priority),
+        reverse=True,
+    )
+    primary_action = actions[0]
+    highest_priority = primary_action.priority
 
     recommendation = Recommendation(
+        action_id=primary_action.action_id,
         summary=summary,
         focus_areas=focus_areas,
         recommendations=actions,
         priority=highest_priority,
         department="ER and ICU" if len(focus_areas) > 1 else (focus_areas[0] if focus_areas else None),
-        action=actions[0].action,
-        reason=actions[0].reason,
-        signals=actions[0].signals,
-        expected_impact=actions[0].expected_impact,
-        owner=actions[0].owner,
-        status=actions[0].status,
+        action=primary_action.action,
+        reason=primary_action.reason,
+        signals=primary_action.signals,
+        expected_impact=primary_action.expected_impact,
+        owner=primary_action.owner,
+        status=primary_action.status,
     )
 
     decision = recommendation.model_dump()

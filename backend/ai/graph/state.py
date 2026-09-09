@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 class HospitalState(TypedDict, total=False):
     user_query: str
+    recommendation_context: Optional[Dict[str, Any]]
     mode: str
     thread_id: str
     intent: Optional[str]

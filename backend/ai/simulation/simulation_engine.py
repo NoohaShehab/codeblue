@@ -112,6 +112,9 @@ def run_simulation(snapshot: Dict[str, Any], scenario: ScenarioInput) -> Dict[st
         "wait_time_index": wait_delta,
         "extra_er_arrivals_estimate": extra_arrivals,
         "icu_overflow": icu_overflow,
+        "action_id": scenario.action_id,
+        "projected_queue_change": waiting_s - recent_waiting,
+        "projected_wait_time_change": wait_delta,
     }
 
     return {

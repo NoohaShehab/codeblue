@@ -37,6 +37,7 @@ const navItems: { href: string; label: string; icon: Icon; count?: string }[] =
     { href: "/simulation", label: "nav.simulation", icon: SlidersHorizontal },
   ];
 const detailItems: { href: string; label: string; icon: Icon }[] = [
+  { href: "/er-operations", label: "nav.erOperations", icon: Activity },
   { href: "/er", label: "nav.emergency", icon: Siren },
   { href: "/icu", label: "nav.icu", icon: ShieldCheck },
 ];

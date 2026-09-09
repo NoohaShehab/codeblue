@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from database import get_db
-from models import PatientVisit
+from models import Department, PatientVisit
 
 
 router = APIRouter(
@@ -24,12 +24,19 @@ def forecast_patient_arrivals(
     """
 
     # Get patient arrival timestamps from database
-    visits = (
-        db.query(PatientVisit.arrival_time)
-        .filter(PatientVisit.arrival_time.isnot(None))
-        .order_by(PatientVisit.arrival_time)
-        .all()
+    er_department_ids = [
+        department.department_id
+        for department in db.query(Department).filter(
+            Department.type.ilike("%er%")
+            | Department.name.ilike("%emergency%")
+        ).all()
+    ]
+    visit_query = db.query(PatientVisit.arrival_time).filter(
+        PatientVisit.arrival_time.isnot(None)
     )
+    if er_department_ids:
+        visit_query = visit_query.filter(PatientVisit.department_id.in_(er_department_ids))
+    visits = visit_query.order_by(PatientVisit.arrival_time).all()
 
     if not visits:
         raise HTTPException(

@@ -20,7 +20,10 @@ export type RecommendationItem = {
   status: 'recommended' | 'monitor' | 'requires_approval';
 };
 
+export type RecommendationContext = Record<string, unknown>;
+
 export type RecommendationDecision = {
+  action_id: string;
   summary: string;
   focus_areas: string[];
   recommendations: RecommendationItem[];
@@ -39,10 +42,14 @@ export type SimulationScenario = {
   icu_beds_unavailable: number;
   additional_icu_admissions: number;
   delayed_discharges: number;
+  action_id?: string;
 };
 
 export type SimulationResponse = {
   disclaimer: string;
+    label?: string | null;
+  scenario: SimulationScenario;
+  baseline: Record<string, number>;
   scenario_metrics: {
     er_pressure: number;
     icu_occupancy_percent: number;
@@ -53,16 +60,19 @@ export type SimulationResponse = {
     icu_occupancy_percent: number;
     available_beds: number;
     wait_time_index: number;
+      projected_queue_change?: number;
+      projected_wait_time_change?: number;
+      action_id?: string | null;
   };
   warnings: string[];
   answer: string | null;
 };
 
-export async function askAI(query: string): Promise<AIQueryResponse> {
+export async function askAI(query: string, context?: RecommendationContext): Promise<AIQueryResponse> {
   const response = await fetch('/api/ai/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, context }),
   });
 
   if (!response.ok) {

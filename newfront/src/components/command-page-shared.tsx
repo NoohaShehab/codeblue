@@ -340,15 +340,21 @@ export function DepartmentTable({
                   {d.availableBeds} <T id="common.beds" />
                 </td>
                 <td className="px-3 py-3.5">
-                  <span
-                    className={`mono text-[11px] ${d.trend > 0 ? "text-[#bb634d]" : "text-[#358d7d]"}`}
-                  >
-                    {d.trend > 0 ? "+" : ""}
-                    {d.trend}%
-                  </span>
-                  <span className="ms-1 text-[10px] text-[#8c9995]">
-                    <T id="table.vsPlan" />
-                  </span>
+                  {d.live ? (
+                    <span className="mono text-[10px] text-[#84928e]">live</span>
+                  ) : (
+                    <>
+                      <span
+                        className={`mono text-[11px] ${d.trend > 0 ? "text-[#bb634d]" : "text-[#358d7d]"}`}
+                      >
+                        {d.trend > 0 ? "+" : ""}
+                        {d.trend}%
+                      </span>
+                      <span className="ms-1 text-[10px] text-[#8c9995]">
+                        <T id="table.vsPlan" />
+                      </span>
+                    </>
+                  )}
                 </td>
                 <td className="px-5 py-3.5 text-end mono text-[11px] text-[#677a78]">
                   {d.capacity} <T id="common.beds" />

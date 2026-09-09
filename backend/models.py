@@ -55,6 +55,14 @@ class PatientVisit(Base):
     discharge_time = Column(DateTime, nullable=True)
     severity = Column(String)
     status = Column(String)
+    registration_time = Column(DateTime, nullable=True)
+    assessment_start_time = Column(DateTime, nullable=True)
+    assessment_end_time = Column(DateTime, nullable=True)
+    treatment_start_time = Column(DateTime, nullable=True)
+    disposition_time = Column(DateTime, nullable=True)
+    current_status = Column(String, nullable=True)
+    disposition = Column(String, nullable=True)
+    updated_at = Column(DateTime, nullable=True)
 
 class Triage(Base):
     __tablename__ = "triage"

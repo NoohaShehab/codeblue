@@ -9,6 +9,7 @@ import { Coordination } from '@/pages/coordination-page';
 import { Dashboard } from '@/pages/dashboard-page';
 import { DigitalTwin } from '@/pages/digital-twin-page';
 import { ER, ICU } from '@/pages/detail-page';
+import { EROperations } from '@/pages/er-operations-page';
 import { Forecasting } from '@/pages/forecasting-page';
 import { Insights } from '@/pages/insights-page';
 import { Simulation } from '@/pages/simulation-page';
@@ -36,6 +37,7 @@ function Router() {
           <Route path="/insights" component={Insights} />
           <Route path="/simulation" component={Simulation} />
           <Route path="/er" component={ER} />
+          <Route path="/er-operations" component={EROperations} />
           <Route path="/icu" component={ICU} />
           <Route component={NotFound} />
         </Switch>

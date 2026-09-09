@@ -4,7 +4,7 @@ export type Range = '6h' | '12h' | '24h' | '7d';
 export type HospitalKpis = {
   totalPatients: number; occupiedBeds: number; availableBeds: number; occupancy: number; erPressure: number; icuOccupancy: number;
 };
-export type DepartmentStatus = { id: string; name: string; status: Severity; occupancy: number; capacity: number; availableBeds: number; trend: number; };
+export type DepartmentStatus = { id: string; name: string; status: Severity; occupancy: number; capacity: number; availableBeds: number; trend: number; live?: boolean; };
 export type ForecastPoint = { timestamp: string; actual: number | null; forecast: number; lowerBound: number; upperBound: number; };
 export type Insight = { id: string; severity: Severity; title: string; summary: string; why: string; impact: string; action: string; area: string; };
 export type CoordinationState = { situation: string; priorities: string[]; recommendation: string; reasoning: string[]; };

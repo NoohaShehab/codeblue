@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { Layers3, Play, RefreshCw } from "lucide-react";
 import { T, useI18n } from "@/lib/i18n";
-import {
-  defaultScenario,
-  type SimulationScenario,
-} from "@/lib/ops-data";
+import { defaultScenario, type SimulationScenario } from "@/lib/ops-data";
 import { simulateAI, type SimulationResponse } from "@/api/ai";
-import {
-  PageHeader,
-  SectionTitle,
-} from "@/components/command-shell";
+import { PageHeader, SectionTitle } from "@/components/command-shell";
 import {
   Outcome,
   SimSlider,
@@ -17,8 +11,49 @@ import {
   card,
 } from "@/components/command-page-shared";
 
+function readIncomingScenario() {
+  const params = new URLSearchParams(window.location.search);
+  const readNumber = (name: string, min: number, max: number) => {
+    const value = Number(params.get(name));
+    return Number.isFinite(value) && value >= min && value <= max
+      ? value
+      : null;
+  };
+  const erArrivalDelta = readNumber("erArrivalDelta", -30, 30);
+  const icuBedReduction = readNumber("icuBedReduction", -6, 6);
+  const icuAdmissionDelta = readNumber("icuAdmissionDelta", -6, 6);
+  const delayedDischarges = readNumber("delayedDischarges", -6, 6);
+  const hasScenario = [
+    erArrivalDelta,
+    icuBedReduction,
+    icuAdmissionDelta,
+    delayedDischarges,
+  ].every((value) => value !== null);
+
+  return {
+    scenario: hasScenario
+      ? {
+          erArrivalDelta: erArrivalDelta as number,
+          icuBedReduction: icuBedReduction as number,
+          icuAdmissionDelta: icuAdmissionDelta as number,
+          delayedDischarges: delayedDischarges as number,
+        }
+      : defaultScenario,
+    actionId: hasScenario ? params.get("actionId") : null,
+  };
+}
+
 export function Simulation() {
-  const [scenario, setScenario] = useState<SimulationScenario>(defaultScenario);
+  const [incomingScenario] = useState(readIncomingScenario);
+  const [scenario, setScenario] = useState<SimulationScenario>(
+    incomingScenario.scenario,
+  );
+  const [actionId, setActionId] = useState<string | null>(
+    incomingScenario.actionId,
+  );
+  const [fromRecommendation, setFromRecommendation] = useState(
+    Boolean(incomingScenario.actionId),
+  );
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +63,15 @@ export function Simulation() {
     setRunning(true);
     setError(null);
     try {
-      setResult(await simulateAI({
-        er_arrivals_change: scenario.erArrivalDelta,
-        icu_beds_unavailable: scenario.icuBedReduction,
-        additional_icu_admissions: scenario.icuAdmissionDelta,
-        delayed_discharges: scenario.delayedDischarges,
-      }));
+      setResult(
+        await simulateAI({
+          er_arrivals_change: scenario.erArrivalDelta,
+          icu_beds_unavailable: scenario.icuBedReduction,
+          additional_icu_admissions: scenario.icuAdmissionDelta,
+          delayed_discharges: scenario.delayedDischarges,
+          action_id: actionId ?? undefined,
+        }),
+      );
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -54,6 +92,9 @@ export function Simulation() {
           <button
             onClick={() => {
               setScenario(defaultScenario);
+              setActionId(null);
+              setFromRecommendation(false);
+              window.history.replaceState({}, "", window.location.pathname);
               setResult(null);
               setError(null);
             }}
@@ -70,38 +111,46 @@ export function Simulation() {
             title="simulation.conditions"
             meta="simulation.conditionsMeta"
           />
+          {fromRecommendation && (
+            <div className="mb-4 text-[10px] uppercase tracking-[.12em] text-[#84928e]">
+              Prefilled from AI recommendation{actionId ? ` · ${actionId}` : ""}
+            </div>
+          )}
           <div className="space-y-7">
             <SimSlider
               label="simulation.erArrivals"
               value={scenario.erArrivalDelta}
-              min={-20}
+              min={-30}
               max={30}
               step={5}
               unit="%"
               onChange={(v) => update("erArrivalDelta", v)}
             />
+
             <SimSlider
               label="simulation.icuUnavailable"
               value={scenario.icuBedReduction}
-              min={0}
+              min={-6}
               max={6}
               step={1}
               unit=" common.beds"
               onChange={(v) => update("icuBedReduction", v)}
             />
+
             <SimSlider
               label="simulation.additionalAdmissions"
               value={scenario.icuAdmissionDelta}
-              min={0}
-              max={5}
+              min={-6}
+              max={6}
               step={1}
               unit=" common.patients"
               onChange={(v) => update("icuAdmissionDelta", v)}
             />
+
             <SimSlider
               label="simulation.delayedDischarges"
               value={scenario.delayedDischarges}
-              min={0}
+              min={-6}
               max={6}
               step={1}
               unit=" common.patients"
@@ -134,6 +183,13 @@ export function Simulation() {
               result ? "simulation.outcomeCompared" : "simulation.outcomeMeta"
             }
           />
+          {result && (
+            <div className="mb-3 text-[10px] uppercase tracking-[.12em] text-[#84928e]">
+              {result.label === "ai_recommendation"
+                ? "AI recommendation scenario"
+                : "Manual what-if scenario"}
+            </div>
+          )}
           {result ? (
             <SimulationOutcome result={result} />
           ) : (

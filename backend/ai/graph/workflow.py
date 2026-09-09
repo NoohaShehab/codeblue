@@ -65,11 +65,28 @@ def build_graph():
     return graph.compile()
 
 
-def run_query(query: str, scenario: dict | None = None) -> HospitalState:
+def run_query(
+    query: str,
+    scenario: dict | None = None,
+    recommendation_context: dict | None = None,
+) -> HospitalState:
+    if recommendation_context:
+        payload: HospitalState = {
+            "user_query": query,
+            "recommendation_context": recommendation_context,
+        }
+        facts = facts_node(payload)
+        payload.update(facts)
+        recommendation = recommendation_node(payload)
+        payload.update(recommendation)
+        return payload
+
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is not set")
     app = build_graph()
     payload: HospitalState = {"user_query": query}
+    if recommendation_context:
+        payload["recommendation_context"] = recommendation_context
     if scenario:
         payload["scenario"] = scenario
     return app.invoke(payload)

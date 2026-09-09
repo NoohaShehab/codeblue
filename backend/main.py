@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from database import ensure_patient_visit_flow_columns
 
 from api.departments import router as departments_router
 from api.beds import router as beds_router
@@ -12,6 +13,7 @@ from api.forecast import router as forecast_router
 from api.icu_forecast import router as icu_forecast_router
 from api.insights import router as insights_router
 from api.er_summary import router as er_summary_router
+from api.er_operations import router as er_operations_router
 
 app = FastAPI(title="Hospital Digital Twin API", version="1.0.0")
 
@@ -34,6 +36,12 @@ app.include_router(forecast_router)
 app.include_router(icu_forecast_router)
 app.include_router(insights_router)
 app.include_router(er_summary_router)
+app.include_router(er_operations_router)
+
+
+@app.on_event("startup")
+def prepare_patient_flow_schema():
+    ensure_patient_visit_flow_columns()
 
 @app.get("/")
 def root():

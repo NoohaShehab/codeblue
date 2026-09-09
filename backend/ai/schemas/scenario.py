@@ -7,10 +7,11 @@ class ScenarioInput(BaseModel):
     """What-if levers. Arrival change is a fraction (0.20 = +20%)."""
 
     er_arrivals_change: float = Field(default=0.0, ge=-0.5, le=1.0)
-    icu_beds_unavailable: int = Field(default=0, ge=0, le=20)
-    additional_icu_admissions: int = Field(default=0, ge=0, le=20)
-    delayed_discharges: int = Field(default=0, ge=0, le=20)
+    icu_beds_unavailable: int = Field(default=0, ge=-5, le=20)
+    additional_icu_admissions: int = Field(default=0, ge=-20, le=20)
+    delayed_discharges: int = Field(default=0, ge=-20, le=20)
     department: Optional[str] = None
+    action_id: Optional[str] = None
 
     @field_validator("er_arrivals_change", mode="before")
     @classmethod

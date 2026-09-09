@@ -365,41 +365,42 @@ def forecast_icu_occupancy(
     )
 
     # =========================================================
-    # 14. Current ICU status
-    #
-    # Last historical point.
-    # =========================================================
+# 14. Current ICU status
+#
+# Current occupancy should come from the latest ACTIVE
+# ICU bed assignments, not from the historical timeline.
+# =========================================================
 
-    current_occupancy = float(
-        icu_occupancy[
-            "occupancy_pct"
-        ].iloc[-1]
+    active_assignments = (
+        db.query(BedAssignment)
+        .filter(
+            BedAssignment.bed_id.in_(icu_bed_ids),
+            BedAssignment.status.ilike("active"),
+        )
+        .all()
     )
 
-    current_occupied_beds = int(
-        icu_occupancy[
-            "occupied_beds"
-        ].iloc[-1]
-    )
+    current_occupied_beds = len({
+        assignment.bed_id
+        for assignment in active_assignments
+        if assignment.bed_id is not None
+    })
 
-    # Safety protection
     current_occupied_beds = min(
         current_occupied_beds,
         total_icu_beds,
     )
 
-    current_occupancy = min(
-        current_occupancy,
-        100,
-    )
+    current_occupancy = (
+        current_occupied_beds
+        / total_icu_beds
+    ) * 100
 
     # =========================================================
     # 15. Available beds
     # =========================================================
-
     available_beds = max(
-        total_icu_beds
-        - current_occupied_beds,
+        total_icu_beds - current_occupied_beds,
         0,
     )
 

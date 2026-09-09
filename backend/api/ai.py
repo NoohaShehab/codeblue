@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class AIQueryIn(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
+    context: Dict[str, Any] | None = None
 
 
 class AIQueryOut(BaseModel):
@@ -47,7 +48,7 @@ class SimulateOut(BaseModel):
 @router.post("/query", response_model=AIQueryOut)
 def query_ai(payload: AIQueryIn):
     try:
-        state = run_query(payload.query)
+        state = run_query(payload.query, recommendation_context=payload.context)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
@@ -95,7 +96,7 @@ def simulate_ai(payload: ScenarioInput):
 
     return SimulateOut(
         disclaimer=result["disclaimer"],
-        label=result.get("label"),
+            label=("ai_recommendation" if payload.action_id else "manual_what_if"),
         scenario=result["scenario"],
         baseline=result["baseline"],
         scenario_metrics=result["scenario_metrics"],
