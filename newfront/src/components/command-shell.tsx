@@ -10,7 +10,7 @@ const navItems: { href: string; label: string; icon: Icon; count?: string }[] = 
   { href: '/digital-twin', label: 'nav.digitalTwin', icon: Map },
   { href: '/forecasting', label: 'nav.forecasting', icon: Activity },
   { href: '/coordination', label: 'nav.coordination', icon: Network, count: '3' },
-  { href: '/insights', label: 'nav.insights', icon: BrainCircuit, count: '4' },
+  { href: '/insights', label: 'nav.insights', icon: BrainCircuit },
   { href: '/simulation', label: 'nav.simulation', icon: SlidersHorizontal },
 ];
 const detailItems: { href: string; label: string; icon: Icon }[] = [

@@ -204,7 +204,7 @@
   "coord.bedPlacement": "Bed placement",
   "insights.eyebrow": "Insights / explainable operational alerts",
   "insights.title": "Know what needs attention.",
-  "insights.description": "Signals are ranked by operational impact, with a concise explanation and a clear next action.",
+  "insights.description": "Signals are ranked by operational severity with concise, evidence-based explanations.",
   "insights.all": "all",
   "insights.whyNow": "Why now",
   "insights.expectedImpact": "Expected impact",
