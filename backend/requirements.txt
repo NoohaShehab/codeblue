@@ -1,0 +1,13 @@
+pandas 
+numpy
+fastapi
+uvicorn
+sqlalchemy
+prophet
+statsmodels
+langchain
+langchain-openai
+langgraph
+pydantic
+python-dotenv
+pytest
