@@ -47,6 +47,12 @@ function LiveInsightRow({ insight }: { insight: Insight }) {
       </button>
       {expanded && (
         <div className="border-t border-[#e3e8e2] bg-[#f7f8f4] px-4 pb-4 pt-3 ps-10">
+          <div className="mb-4">
+            <div className="mb-1 mono text-[9px] uppercase tracking-wider text-[#8b9a96]">
+              WHY
+            </div>
+            <p className="leading-relaxed text-[#526a6b]">{insight.why}</p>
+          </div>
           <div className="grid gap-3 text-xs md:grid-cols-2">
             <div>
               <div className="mb-1 mono text-[9px] uppercase tracking-wider text-[#8b9a96]">

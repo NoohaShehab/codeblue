@@ -18,6 +18,7 @@ class Insight(BaseModel):
     severity: Severity
     title: str
     description: str
+    why: str
     evidence: List[EvidenceItem]
     source: str
     as_of: Optional[str] = None
