@@ -1,4 +1,4 @@
-const BASE_URL = 'http://127.0.0.1:8000/api';
+const BASE_URL = 'http://127.0.0.1:8001/api';
 
 export async function apiClient(endpoint, options = {}) {
   const response = await fetch(`${BASE_URL}${endpoint}`, {

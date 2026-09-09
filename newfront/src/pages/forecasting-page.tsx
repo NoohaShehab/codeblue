@@ -32,7 +32,7 @@ export function Forecasting() {
   const [erUpper, setErUpper] = useState(0);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/icu-forecast?hours=24")
+    fetch("http://127.0.0.1:8001/api/icu-forecast?hours=24")
       .then((res) => res.json())
       .then((data) => {
         console.log("ICU API DATA:", data);
@@ -60,7 +60,7 @@ export function Forecasting() {
   }, []);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/forecast?hours=24")
+    fetch("http://127.0.0.1:8001/api/forecast?hours=24")
       .then((res) => res.json())
       .then((data) => {
         console.log("ER API DATA:", data);
