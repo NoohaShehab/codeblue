@@ -25,6 +25,9 @@ class AIQueryOut(BaseModel):
     agent: str | None = None
     answer: Any = None
     routing_decision: Dict[str, Any] | None = None
+    decision: Dict[str, Any] | None = None
+    recommendation_agent: str | None = None
+    recommendation_summary: str | None = None
 
 
 class SimulateOut(BaseModel):
@@ -58,6 +61,9 @@ def query_ai(payload: AIQueryIn):
         agent=final_response.get("agent"),
         answer=final_response.get("answer"),
         routing_decision=state.get("routing_decision"),
+        decision=state.get("decision"),
+        recommendation_agent=final_response.get("recommendation_agent"),
+        recommendation_summary=final_response.get("recommendation_summary"),
     )
 
 

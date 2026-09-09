@@ -12,6 +12,7 @@ StateGraph = _langgraph.StateGraph
 
 from ai.agents.facts import facts_node
 from ai.agents.operations import operations_node
+from ai.agents.recommendation import recommendation_node
 from ai.agents.resource import resource_node
 from ai.agents.simulation import simulation_node
 from ai.agents.supervisor import supervisor_node
@@ -44,6 +45,7 @@ def build_graph():
     graph.add_node("operations", operations_node)
     graph.add_node("resource", resource_node)
     graph.add_node("simulate", simulation_node)
+    graph.add_node("recommendation", recommendation_node)
 
     graph.add_edge(START, "facts")
     graph.add_edge("facts", "supervisor")
@@ -56,9 +58,10 @@ def build_graph():
             "simulate": "simulate",
         },
     )
-    graph.add_edge("operations", END)
-    graph.add_edge("resource", END)
-    graph.add_edge("simulate", END)
+    graph.add_edge("operations", "recommendation")
+    graph.add_edge("resource", "recommendation")
+    graph.add_edge("simulate", "recommendation")
+    graph.add_edge("recommendation", END)
     return graph.compile()
 
 
